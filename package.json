@@ -1,0 +1,35 @@
+{
+  "name": "sortify",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "devDependencies": {
+    "@types/cli-progress": "^3.11.6",
+    "@types/node": "^25.9.3",
+    "nodemon": "^3.1.14",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3"
+  },
+  "scripts": {
+  "dev":   "nodemon --exec ts-node src/index.ts",
+  "build": "tsc",
+  "start": "node dist/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Aicyraa/Sortify.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Aicyraa/Sortify/issues"
+  },
+  "homepage": "https://github.com/Aicyraa/Sortify#readme",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "cli-progress": "^3.12.0",
+    "ora": "^9.4.0"
+  }
+}
