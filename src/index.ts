@@ -1,29 +1,36 @@
-
-
-// get folder or files
-// process it
-const path = require("node:path");
+import path from "node:path"
+import { parseArgs } from "node:util"
+import type { Flags } from './types'
 
 ((args: string[]): void => {
-  // process args, get the folder, 
-  // get absolute file path
-  const [folder, ...command] = args
-  const targetPath = path.resolve(folder)
-  console.log(targetPath)
+  const options = {
+    sort: { type: 'boolean' },
+    'dry-run': { type: 'boolean' },
+    undo: { type: 'boolean' }
+  } as const
+
+  const { values, positionals } = parseArgs({ 
+    args,
+    options,
+    allowPositionals: true
+  })
   
-})(process.argv.slice(2));
+  const folder: string = path.resolve(positionals[0] ?? '.')
 
-function Sort(): void {
-  // get folder or files
-  // sort it
+  if (values.sort) Organize(folder)
+  if (values.undo) Undo(folder)
+  if (values['dry-run']) DryRun(folder)
+
+})(process.argv.slice(2))
+
+function Organize(folder: string): void {
+  console.log('1')
 }
 
-function DryRun(): void {
-  //, get folder and file
+function DryRun(folder: string): void {
+  console.log('2')
 }
 
-function Undo(): void {
-  // check logger.json
-  // get folder or files
-  // process it
+function Undo(folder: string): void {
+  console.log('3')
 }
