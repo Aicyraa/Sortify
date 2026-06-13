@@ -8,7 +8,7 @@ const path = require("node:path");
   // process args, get the folder, 
   // get absolute file path
   const [folder, ...command] = args
-  const targetPath: string = path.resolve(folder)
+  const targetPath = path.resolve(folder)
   console.log(targetPath)
   
 })(process.argv.slice(2));
