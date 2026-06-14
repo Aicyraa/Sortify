@@ -1,8 +1,9 @@
-import path from "node:path"
+import * as path from "node:path"
 import { parseArgs } from "node:util"
-import type { Flags } from './types'
+import organize from "./organizer.ts";
 
 ((args: string[]): void => {
+console.log(args)
   const options = {
     sort: { type: 'boolean' },
     'dry-run': { type: 'boolean' },
@@ -16,16 +17,15 @@ import type { Flags } from './types'
   })
   
   const folder: string = path.resolve(positionals[0] ?? '.')
-
-  if (values.sort) Organize(folder)
+  
+  if (values.sort) {
+    
+    organize(folder)
+  }
   if (values.undo) Undo(folder)
   if (values['dry-run']) DryRun(folder)
 
 })(process.argv.slice(2))
-
-function Organize(folder: string): void {
-  console.log('1')
-}
 
 function DryRun(folder: string): void {
   console.log('2')
