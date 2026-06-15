@@ -1,6 +1,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import type { HistoryLog, HistoryEntry } from "./types.ts";
+import { logInfo } from "./logger.ts"
 
 const HISTORY_PATH = path.join(process.cwd(), "history-log.json");
 
@@ -28,8 +29,6 @@ export function saveHistoryEntry(entry: HistoryEntry): void {
   const history = readHistory();
   history[entry.folderName] = entry;
   writeHistory(history);
-
-  console.log(`  📄 History saved → history-log.json (key: "${entry.folderName}")`);
 }
 
 export function removeHistoryEntry(folderName: string): void {

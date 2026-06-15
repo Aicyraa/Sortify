@@ -2,6 +2,7 @@ import * as path from "node:path";
 import * as fs from "node:fs";
 import type { FileInfo, FolderInfo } from "./types.ts";
 import { FILE_CATEGORIES } from "./types.ts";
+import { succeedSpinner } from "./logger.ts";
 
 export function processEntries(entries: string[]): FileInfo[] {
   return entries.map((entry) => ({
@@ -19,7 +20,7 @@ export function scanFolder(folderPath: string): FolderInfo {
     .filter((entry) => fs.statSync(path.join(folderPath, entry)).isFile())
     .map((entry) => path.join(folderPath, entry));
 
-  console.log("Scan successful");
+  succeedSpinner(`Scanned folder — found ${processed.length} file(s)`);
 
   return {
     fileCount: processed.length,
@@ -27,6 +28,6 @@ export function scanFolder(folderPath: string): FolderInfo {
   };
 }
 
- function getDestination(ext: string): string {
+function getDestination(ext: string): string {
   return FILE_CATEGORIES[ext] ?? "others";
 }

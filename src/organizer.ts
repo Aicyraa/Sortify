@@ -1,21 +1,32 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import type { FileInfo, FolderInfo, HistoryEntry } from "./types.ts";
-import { FILE_CATEGORIES } from "./types.ts";
+import { SingleBar, Presets } from "cli-progress";
+import type { FileInfo, HistoryEntry } from "./types.ts";
 import { saveHistoryEntry } from "./historyLog.ts";
-import { scanFolder, processEntries } from "./helper.ts"
+import { scanFolder, processEntries } from "./helper.ts";
+import {
+  logHeader,
+  logError,
+  logWarn,
+  logSummary,
+  logDetail,
+  startSpinner,
+  failSpinner,
+} from "./logger.ts";
 
 export default function organize(folderPath: string): void {
 
   if (!fs.existsSync(folderPath)) {
-    console.log(`${folderPath} don't exist!`);
+    failSpinner(`Folder not found: ${folderPath}`);
     process.exit(1);
   }
+
+  startSpinner("Scanning files...");
 
   const { fileCount, processed } = scanFolder(folderPath);
 
   if (fileCount === 0) {
-    console.log("⚠️  No files found to organize.");
+    logWarn("No files found to organize.");
     return;
   }
 
@@ -23,10 +34,19 @@ export default function organize(folderPath: string): void {
   moveFiles(fileObjects, folderPath);
   saveToHistory(folderPath, fileObjects);
 
-  console.log(`\n✅ Done! ${fileCount} files organized.`);
+  logSummary(`\nDone! ${fileCount} file(s) organized.`);
 }
 
 function moveFiles(fileObjects: FileInfo[], folderPath: string): void {
+  const bar = new SingleBar(
+    {
+      format: "Organizing |{bar}| {percentage}% | {value}/{total} files",
+    },
+    Presets.shades_classic
+  );
+
+  bar.start(fileObjects.length, 0);
+
   for (const file of fileObjects) {
     const folderDest = path.join(folderPath, file.destination);
     const fileDest = path.join(folderDest, file.name);
@@ -34,7 +54,13 @@ function moveFiles(fileObjects: FileInfo[], folderPath: string): void {
     fs.mkdirSync(folderDest, { recursive: true });
     fs.renameSync(file.originalPath, fileDest);
 
-    console.log(`Moved ${file.originalPath} to ${folderDest}`);
+    bar.increment();
+  }
+
+  bar.stop();
+
+  for (const file of fileObjects) {
+    logDetail(`${file.name}  →  ${file.destination}/`);
   }
 }
 

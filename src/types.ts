@@ -10,16 +10,13 @@ export interface FileInfo {
   originalPath: string
 }
 
-// One entry in history-log.json — represents one --sort run
-// on a specific folder.
 export interface HistoryEntry {
-  folderName: string;   // e.g. "Downloads" — used as the lookup key
-  folderPath: string;   // absolute path that was sorted
-  timestamp: string;    // ISO date string, for display
-  files: FileInfo[];    // same shape as before — used to undo
+  folderName: string
+  folderPath: string;
+  timestamp: string;
+  files: FileInfo[];
 }
 
-// The whole history-log.json file is a record of folderName -> entry
 export type HistoryLog = Record<string, HistoryEntry>;
 
 export const FILE_CATEGORIES: Record<string, string> = {
