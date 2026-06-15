@@ -4,7 +4,7 @@ export interface FolderInfo {
 }
 
 export interface FileInfo {
-  mame: string,
+  name: string, 
   ext: string,
   destination: string,
   originalPath: string
