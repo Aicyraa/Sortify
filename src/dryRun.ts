@@ -12,6 +12,5 @@ export default function dryRun(folderPath: string): void {
   const fileObjects = processEntries(processed);
   
   console.log("DryRun success", fileCount)
-  
-  
+
 }
