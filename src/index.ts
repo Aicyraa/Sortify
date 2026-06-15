@@ -2,8 +2,9 @@ import * as path from "node:path"
 import { parseArgs } from "node:util"
 import organize from "./organizer.ts";
 import dryRun from "./dryRun.ts"
+import undo from "./undo.ts"
 
-((args: string[]): void => {
+(async (args: string[]): void => {
 
   const options = {
     sort: { type: 'boolean' },
@@ -20,7 +21,7 @@ import dryRun from "./dryRun.ts"
   const folder: string = path.resolve(positionals[0] ?? '.')
   
   if (values.sort) organize(folder)
-  if (values.undo) undo(folder)
+  if (values.undo) await undo(folder)
   if (values['dry-run']) dryRun(folder)
 
 })(process.argv.slice(2))

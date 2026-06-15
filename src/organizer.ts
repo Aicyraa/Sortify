@@ -1,8 +1,9 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import type { FileInfo, FolderInfo } from "./types.ts";
+import type { FileInfo, FolderInfo, HistoryEntry } from "./types.ts";
 import { FILE_CATEGORIES } from "./types.ts";
-import { processEntries, scanFolder } from "./helper.ts"
+import { saveHistoryEntry } from "./historyLog.ts";
+import { scanFolder, processEntries } from "./helper.ts"
 
 export default function organize(folderPath: string): void {
 
@@ -12,9 +13,17 @@ export default function organize(folderPath: string): void {
   }
 
   const { fileCount, processed } = scanFolder(folderPath);
+
+  if (fileCount === 0) {
+    console.log("⚠️  No files found to organize.");
+    return;
+  }
+
   const fileObjects = processEntries(processed);
   moveFiles(fileObjects, folderPath);
-  saveLog(fileObjects);
+  saveToHistory(folderPath, fileObjects);
+
+  console.log(`\n✅ Done! ${fileCount} files organized.`);
 }
 
 function moveFiles(fileObjects: FileInfo[], folderPath: string): void {
@@ -29,11 +38,13 @@ function moveFiles(fileObjects: FileInfo[], folderPath: string): void {
   }
 }
 
-function saveLog(fileObjects: FileInfo[]): void {
-  fs.writeFileSync(
-    "./src/history-log.json",
-    JSON.stringify(fileObjects, null, 2)
-  );
-  console.log("  📄 Log saved → tanggap-log.json");
-}
+function saveToHistory(folderPath: string, fileObjects: FileInfo[]): void {
+  const entry: HistoryEntry = {
+    folderName: path.basename(folderPath),
+    folderPath: folderPath,
+    timestamp: new Date().toISOString(),
+    files: fileObjects,
+  };
 
+  saveHistoryEntry(entry);
+}
