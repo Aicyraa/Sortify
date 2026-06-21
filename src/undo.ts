@@ -1,101 +1,134 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
-import * as readline from "node:readline";
-import type { HistoryEntry } from "./types.ts";
-import { readHistory, removeHistoryEntry } from "./historyLog.ts";
+import * as fs       from 'node:fs';
+import * as path     from 'node:path';
+import * as readline from 'node:readline';
+import type { HistoryEntry } from './types.ts';
+import { readHistory, removeHistoryEntry } from './historyLog.ts';
+import { DEFAULT_CONFIG } from './types.ts';
 import {
-  logHeader,
   logWarn,
   logError,
   logInfo,
   logDetail,
   logSummary,
+  logDivider,
+  logHeader,
   startSpinner,
   succeedSpinner,
-} from "./logger.ts";
+  withProgressBar,
+} from './logger.ts';
+
+// ─── Prompt Helper ────────────────────────────────────────────────────────────
 
 function ask(question: string): Promise<string> {
   const rl = readline.createInterface({
-    input: process.stdin,
+    input:  process.stdin,
     output: process.stdout,
   });
 
-  return new Promise((resolve) => {
-    rl.question(question, (answer) => {
+  return new Promise(resolve => {
+    rl.question(question, answer => {
       rl.close();
       resolve(answer);
     });
   });
 }
 
-// "_folder" is unused on purpose — undo works off history-log.json,
-// not the folder the user is currently pointed at.
-export default async function undo(_folder: string): Promise<void> {
+// ─── Undo ─────────────────────────────────────────────────────────────────────
 
-  startSpinner("Reading history-log.json...");
-  const history = readHistory();
+export default async function undo(_folder: string): Promise<void> {
+  startSpinner('Reading history-log.json...');
+  const history     = readHistory();
   const folderNames = Object.keys(history);
 
   if (folderNames.length === 0) {
-    logWarn("No history found — nothing to undo.");
+    logWarn('No history found — nothing to undo.');
     return;
   }
 
   succeedSpinner(`Found ${folderNames.length} folder(s) in history`);
 
-  logInfo("\nFolders you can undo:\n");
+  console.log('');
+  logHeader('  Sortify — Undo');
+  logDivider();
+
   folderNames.forEach((name, i) => {
     const entry = history[name];
+    if (!entry) return;
     const date = new Date(entry.timestamp).toLocaleString();
-    logDetail(`[${i + 1}] ${name}  —  ${entry.files.length} files  —  sorted ${date}`);
+    logInfo(`[${i + 1}] ${name}`);
+    logDetail(`${entry.files.length} file(s)  |  sorted on ${date}`);
   });
-  console.log("");
 
-  const answer = await ask("Enter the number of the folder to undo (or 'q' to cancel): ");
+  logDivider();
+  console.log('');
 
-  if (answer.trim().toLowerCase() === "q") {
-    logInfo("Cancelled.");
+  const answer = await ask('[?] Enter number to undo (or q to cancel): ');
+
+  if (answer.trim().toLowerCase() === 'q') {
+    logInfo('Cancelled.');
     return;
   }
 
   const index = parseInt(answer.trim(), 10) - 1;
 
   if (isNaN(index) || index < 0 || index >= folderNames.length) {
-    logError("Invalid selection.");
+    logError('Invalid selection.');
     return;
   }
 
-  const folderName = folderNames[index];
+  const folderName: string = folderNames[index] || '';
   const entry = history[folderName];
 
-  undoEntry(entry);
+  if (!entry) {
+    logError('History entry not found.');
+    return;
+  }
+
+  console.log('');
+  await undoEntry(entry);
   removeHistoryEntry(folderName);
 
-  logSummary(`\nUndo complete! "${folderName}" restored.`);
+  logSummary(`\nUndo complete! "${folderName}" restored.\n`);
 }
 
-function undoEntry(entry: HistoryEntry): void {
-  const touchedFolders = new Set<string>();
+// ─── Undo Entry ───────────────────────────────────────────────────────────────
 
-  for (const file of entry.files) {
+async function undoEntry(entry: HistoryEntry): Promise<void> {
+  const touchedFolders = new Set<string>();
+  const restorable     = entry.files.filter(file =>
+    fs.existsSync(path.join(entry.folderPath, file.destination, file.name)),
+  );
+  const skipped        = entry.files.length - restorable.length;
+
+  if (skipped > 0) {
+    logWarn(`${skipped} file(s) not found — will be skipped`);
+    console.log('');
+  }
+
+  await withProgressBar(restorable, 'Restoring ', DEFAULT_CONFIG.stepDelayMs, file => {
     const currentPath = path.join(entry.folderPath, file.destination, file.name);
     const restorePath = file.originalPath;
 
-    if (!fs.existsSync(currentPath)) {
-      logWarn(`Skipped (not found): ${file.destination}/${file.name}`);
-      continue;
-    }
-
     fs.renameSync(currentPath, restorePath);
-    logDetail(`↩ ${file.destination}/${file.name}  →  ${path.basename(restorePath)}`);
-
     touchedFolders.add(path.join(entry.folderPath, file.destination));
+  });
+
+  console.log('');
+  logDivider();
+
+  for (const file of restorable) {
+    logDetail(`${file.destination}/${file.name}  <-  ${path.basename(file.originalPath)}`);
   }
+
+  logDivider();
+  console.log('');
 
   for (const folder of touchedFolders) {
     removeIfEmpty(folder);
   }
 }
+
+// ─── Cleanup ──────────────────────────────────────────────────────────────────
 
 function removeIfEmpty(folderPath: string): void {
   if (!fs.existsSync(folderPath)) return;
@@ -106,6 +139,6 @@ function removeIfEmpty(folderPath: string): void {
     fs.rmdirSync(folderPath);
     logDetail(`Removed empty folder: ${path.basename(folderPath)}/`);
   } else {
-    logDetail(`ℹ Kept ${path.basename(folderPath)}/ — not empty (${remaining.length} item(s) left)`);
+    logDetail(`Kept ${path.basename(folderPath)}/ — ${remaining.length} item(s) remaining`);
   }
 }
